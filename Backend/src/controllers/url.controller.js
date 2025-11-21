@@ -1,4 +1,4 @@
-import URL from "../models/url.model.js";
+import UrlModel from "../models/url.model.js";
 import { nanoid } from "nanoid";
 
 const createUrl = async (req, res) => {
@@ -9,38 +9,41 @@ const createUrl = async (req, res) => {
       return res.status(400).json({ message: "URL is required" });
     }
 
-    //  Now add a check whether there is a custom code existing  or not
+    // Basic Url validation
+    try {
+      const normalizedUrl = new URL(url).href;
+      // to avoid the trailing slash in the url 
 
-    if (customCode) {
-      const existingUrl = await URL.findOne({ short_url: customCode });
-
-      if (existingUrl) {
-        return res.status(400).json({ message: "Custom code already exists" });
-      }
-
-      const newUrl = await URL.create({
-        full_url: url,
-        short_url: customCode,
-      });
-
-      return res
-        .status(201)
-        .json({ message: "URL created successfully", customCode });
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid URL" });
     }
 
-    const shortCode = nanoid(6);
-    console.log(shortCode);
+    // Decide about the slug
 
-    const newUrl = await URL.create({
-      full_url: url,
-      short_url: shortCode,
-    });
+    const shortCode = customCode || nanoid(6);
 
-    return res
-      .status(201)
-      .json({ message: "URL created successfully", shortCode });
+    try {
+      const newUrl = await UrlModel.create({
+        full_url: normalizedUrl,
+        short_url: shortCode,
+      });
+
+      return res.status(201).json({
+        message: "URL created successfully",
+        shortURL: `${process.env.BASE_URL}/${shortCode}`,
+      });
+    } catch (dBError) {
+      // handle duplicate slug
+      if (dBError.code === 11000) {
+        return res
+          .status(400)
+          .json({ message: "Custom code already exists,choose another" });
+      }
+
+      throw dBError;
+    }
   } catch (error) {
-    console.log(error);
+    console.log("error", error);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
@@ -48,7 +51,12 @@ const createUrl = async (req, res) => {
 const redirectUrl = async (req, res) => {
   try {
     const { code } = req.params;
-    const url = await URL.findOne({ short_url: code });
+    const url = await UrlModel.findOne(
+      { short_url: code },
+      { full_url: 1, _id: 0 }
+    )
+      .lean()
+      .exec();
 
     if (!url) return res.status(404).json({ message: "URL not found" });
 

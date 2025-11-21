@@ -3,12 +3,14 @@ import mongoose from  "mongoose";
 const urlSchema = new mongoose.Schema({
     full_url:{
         type:String,
-        required:true
+        required:true,
+        
     },
     short_url:{
         type:String,
         required:true,
-        unique:true
+        unique:true,
+        index:true
     },
     userClicks:{
         type:Number,
