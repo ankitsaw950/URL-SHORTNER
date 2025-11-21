@@ -1,6 +1,7 @@
 import express from "express"
 import dotenv from "dotenv"
 import connectDB from "./src/config/db.js"
+import redisClient from "./src/config/redis.js"
 
 dotenv.config()
 
@@ -19,8 +20,16 @@ connectDB().then(() => {
 
 
 app.get("/",(req,res)=>{
-    res.send("Hello raja ji")
+    res.send("Hello Ankit ji")
 })
+
+
+app.get("/demo",async (req,res)=>{
+    await redisClient.set("demoKey","Working");
+    const value = await redisClient.get("demoKey");
+    res.send({redisValue: value })
+})
+
 
 
 import urlRoutes from "./src/routes/url.routes.js"
