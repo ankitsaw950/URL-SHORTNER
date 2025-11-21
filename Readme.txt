@@ -124,7 +124,21 @@ This is unnecessary for a simple redirect.
 
 .lean() returns a plain JS object
 
-Example:
+=====================================================
+
+Now adding the redis for caching
+==========================================================
+
+1. Check Redis cache
+     ↓
+2. If found → redirect immediately (2ms)
+     ↓
+3. If NOT found → query MongoDB
+     ↓
+4. Save result to Redis (cache)
+     ↓
+5. Redirect
+
 
 
  
