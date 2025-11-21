@@ -1,5 +1,39 @@
-import URL from "../models/url.model.js";
-import { nanoid } from "nanoid";
+making the basic setup of folders and file
+
+make the two controller 
+- create url
+- redirect url
+
+-Now provide the feature of adding custom slug
+
+if (customCode) {
+  const existingUrl = await URL.findOne({ short_url: customCode });
+  if (existingUrl) {
+    return res.status(400).json({ message: "Custom code already exists" });
+  }
+}
+
+
+This creates the race condition ..
+
+If two users send the  same custom slug at the same time.
+
+- Both calls run findOne()
+- Both thinks that slug does not exist.
+- Both try  to create the document
+- One user able to create and the other fails.
+
+Also this adds ,
+- one extra DB read everytime , when the user sends the custom code
+- this slows down the api
+
+After checking the slug ,  I am creating the document , this means that i am not trusting the db uniquness feature
+
+
+this code is not scalable if multiple server instances run
+
+
+================
 
 const createUrl = async (req, res) => {
   try {
@@ -45,6 +79,16 @@ const createUrl = async (req, res) => {
   }
 };
 
+------------
+
+In this I am not checking the format of the URL 
+
+So first i need to validate whether the url is in the valid format or not
+
+
+
+---------------------------
+
 const redirectUrl = async (req, res) => {
   try {
     const { code } = req.params;
@@ -60,3 +104,8 @@ const redirectUrl = async (req, res) => {
 };
 
 export { createUrl, redirectUrl };
+ 
+
+
+ 
+
