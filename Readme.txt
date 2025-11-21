@@ -106,6 +106,26 @@ const redirectUrl = async (req, res) => {
 export { createUrl, redirectUrl };
  
 
+ => .lean()
+
+This is VERY important.
+
+Normal Mongoose query returns a heavy Mongoose document
+
+includes getters, setters
+
+virtual properties
+
+internal metadata
+
+prototype chain
+
+This is unnecessary for a simple redirect.
+
+.lean() returns a plain JS object
+
+Example:
+
 
  
 
