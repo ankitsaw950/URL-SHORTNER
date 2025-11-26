@@ -140,6 +140,36 @@ Now adding the redis for caching
 5. Redirect
 
 
+===============================
+
+Now adding the analytics features : 
+
+Analytics is divided into 3 phases :
+1. Basic Analytics (These are must-have metrics)
+    - Click Count
+    - Last Click Timestamp
+    - First Click Timestamp
+    - Store analytics per short URL
+
+2. Intermediate Analytics (These tell you more about the user)
+
+✔ IP Address
+✔ User-Agent
+✔ Device Type (mobile/desktop/tablet)
+✔ Browser Name
+✔ Operating System
+✔ Referrer (where the user came from)
+✔ Store logs in Redis (fast, scalable)
+
+
+
+3. Advanced Analytics
+   - Geolocation
+   - Browser Breakdown
+   - OS Breakdown
+   - Hourly Click Graph
+   - Unique Visitors
+   - Heatmaps, charts, dashboards
 
  
 
