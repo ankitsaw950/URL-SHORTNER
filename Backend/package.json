@@ -16,6 +16,7 @@
     "express": "^5.1.0",
     "mongoose": "^8.20.0",
     "nanoid": "^5.1.6",
-    "redis": "^5.10.0"
+    "redis": "^5.10.0",
+    "ua-parser-js": "^2.0.6"
   }
 }

@@ -140,6 +140,62 @@ Now adding the redis for caching
 5. Redirect
 
 
+===============================
+
+Now adding the analytics features : 
+
+Analytics is divided into 3 phases :
+1. Basic Analytics (These are must-have metrics)
+    - Click Count
+    - Last Click Timestamp
+    - First Click Timestamp
+    - Store analytics per short URL
+
+2. Intermediate Analytics (These tell you more about the user)
+
+✔ IP Address
+✔ User-Agent
+✔ Device Type (mobile/desktop/tablet)
+✔ Browser Name
+✔ Operating System
+✔ Referrer (where the user came from)
+✔ Store logs in Redis (fast, scalable)
+
+
+
+3. Advanced Analytics
+   - Geolocation
+   - Browser Breakdown
+   - OS Breakdown
+   - Hourly Click Graph
+   - Unique Visitors
+   - Heatmaps, charts, dashboards
+
+
+   -------------------------------------------
+
+   Implementing the phase 1 :
+
+   First of all create 3 variables to store the values :
+   - countKey
+   - firstKey
+   - lastkey
+
+
+   redisclient.incr(countKey).catch(()=>{})
+
+   redisclient.set(lastkey,time).catch(()=>{})
+
+   redisclient.set(firstKey,time,{NX : true}).catch(()=>{})    NX => this is used , if it is set once then it is being ignored the rest of the time
+
+   --------------------------------------------
+
+   Implementing phase 2:
+
+   For this we install the package :
+   
+   npm install ua-parser-js
+
 
  
 

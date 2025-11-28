@@ -1,7 +1,7 @@
 import UrlModel from "../models/url.model.js";
 import { nanoid } from "nanoid";
 import redisClient from "../config/redis.js";
-
+import { recordBasicAnalytics , recordIntermediateAnalytics } from "../utils/analytics.js";
 
 /*
 @ Helper : safe redis  get ( Returns proper msg on error)
@@ -13,13 +13,13 @@ async function safeRedisGet(key){
     return await redisClient.get(key);
 
   } catch (error) {
-    console.error("Redis GET error : ",err?.message || error)
+    console.error("Redis GET error : ", err?.message || error)
     return null
   }
 }
 
 // Safe redis set
-async function safeRedisSet(key,value ,ttlSeconds =86400){
+async function safeRedisSet(key, value ,ttlSeconds = 86400){
   try {
  // if ttlSeconds is falsy, set without expiry
     if (ttlSeconds) {
@@ -42,7 +42,8 @@ const createUrl = async (req, res) => {
       return res.status(400).json({ message: "URL is required" });
     }
 
-      let normalizedUrl;
+    let normalizedUrl;
+    
     // Basic Url validation
     try {
        const parsed = new URL(url);
@@ -95,15 +96,20 @@ const createUrl = async (req, res) => {
 
 const redirectUrl = async (req, res) => {
   try {
+
     const { code } = req.params;
+    const cachekey = `short:${code}`;
 
     // STEP 1 : Check the redis cache first
 
-    const cachekey = `short:${code}`;
     const cachedUrl = await redisClient.get(cachekey);
 
     if(cachedUrl){
       console.log("🟢 Redis cache hit");
+
+      recordBasicAnalytics(code);
+      recordIntermediateAnalytics(req,code);
+
       return res.redirect(cachedUrl);
     }
 
@@ -120,7 +126,15 @@ const redirectUrl = async (req, res) => {
     if (!url) return res.status(404).json({ message: "URL not found" });
 
     // STEP 3 : Add to the redis cache
-    await redisClient.set(cachekey,url.full_url,{EX:60*60})
+    try {
+      
+      await redisClient.set(cachekey,url.full_url,{EX:60*60})
+    } catch (error) {
+      console.error("Redis SET error : ",err?.message || error)
+    }
+
+    recordBasicAnalytics(code);
+    recordIntermediateAnalytics(req,code);
 
     return res.redirect(url.full_url);
   } catch (error) {
