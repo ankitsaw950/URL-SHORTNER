@@ -171,5 +171,31 @@ Analytics is divided into 3 phases :
    - Unique Visitors
    - Heatmaps, charts, dashboards
 
+
+   -------------------------------------------
+
+   Implementing the phase 1 :
+
+   First of all create 3 variables to store the values :
+   - countKey
+   - firstKey
+   - lastkey
+
+
+   redisclient.incr(countKey).catch(()=>{})
+
+   redisclient.set(lastkey,time).catch(()=>{})
+
+   redisclient.set(firstKey,time,{NX : true}).catch(()=>{})    NX => this is used , if it is set once then it is being ignored the rest of the time
+
+   --------------------------------------------
+
+   Implementing phase 2:
+
+   For this we install the package :
+   
+   npm install ua-parser-js
+
+
  
 

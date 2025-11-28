@@ -1,7 +1,7 @@
 import UrlModel from "../models/url.model.js";
 import { nanoid } from "nanoid";
 import redisClient from "../config/redis.js";
-import { recordBasicAnalytics } from "../utils/analytics.js";
+import { recordBasicAnalytics , recordIntermediateAnalytics } from "../utils/analytics.js";
 
 /*
 @ Helper : safe redis  get ( Returns proper msg on error)
@@ -108,6 +108,7 @@ const redirectUrl = async (req, res) => {
       console.log("🟢 Redis cache hit");
 
       recordBasicAnalytics(code);
+      recordIntermediateAnalytics(req,code);
 
       return res.redirect(cachedUrl);
     }
@@ -133,6 +134,7 @@ const redirectUrl = async (req, res) => {
     }
 
     recordBasicAnalytics(code);
+    recordIntermediateAnalytics(req,code);
 
     return res.redirect(url.full_url);
   } catch (error) {
