@@ -1,7 +1,9 @@
 
 ---
 
-#   `URL Shortener` 
+#  `URL Shortener` 
+
+![Project Cover](./assets/image.png)
 
 This section explains **how to use the URL Shortener backend in a real environment**.
 It covers setup, configuration, API usage, analytics retrieval, and production deployment.

@@ -1,6 +1,8 @@
 
 ---
 
+![Project Cover](./assets/cover.png)
+
 ##   `URL Shortener – Project Documentation` 
 
 This document explains the entire development process of the URL Shortener backend up to implementing Redis caching. It covers folder setup, controller design, adding custom slugs, identifying race conditions, optimizing MongoDB usage, improving query performance with `.lean()`, and integrating Redis for high-speed redirects.
