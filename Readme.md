@@ -1,255 +1,281 @@
 
----
-
-# 📄 **URL Shortener – Project Documentation (Till Redis Caching)**
-
-This document explains the entire development process of the URL Shortener backend up to implementing Redis caching. It covers folder setup, controller design, adding custom slugs, identifying race conditions, optimizing MongoDB usage, improving query performance with `.lean()`, and integrating Redis for high-speed redirects.
 
 ---
 
-#  **1. Project Setup**
+# 📘 **URL Shortener – Usage & Integration Guide (For Developers & Teams)**
 
-## **Folder Structure**
+This section explains **how to use the URL Shortener backend in a real environment**.
+It covers setup, configuration, API usage, analytics retrieval, and production deployment.
 
-We follow a clean modular structure:
+---
+
+#  **1. Requirements**
+
+### **System Requirements**
+
+| Component      | Version |
+| -------------- | ------- |
+| Node.js        | v18+    |
+| MongoDB        | v5+     |
+| Redis          | v6+     |
+| PM2 (optional) | v5+     |
+
+### **Dependencies Installed**
 
 ```
-project/
-│
-├── src/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── config/
-│   └── utils/
-│
-├── server.js
-└── package.json
+express, mongoose, nanoid, redis, ua-parser-js, dotenv, cors
 ```
 
-### **Key Files**
+---
 
-* `controllers/url.controller.js` → Create + Redirect logic
-* `models/url.model.js` → URL schema
-* `routes/url.routes.js` → Routing
-* `config/db.js` → MongoDB connection
-* `config/redis.js` → Redis caching
+# ⚙️ **2. How to Start the Project**
+
+### **Step 1 — Clone the Repository**
+
+```bash
+git clone (Link) https://github.com/ankitsaw950/URL-SHORTNER
+cd Backend
+```
+
+### **Step 2 — Install Dependencies**
+
+```bash
+npm install
+```
+
+### **Step 3 — Configure Environment Variables**
+
+Create a `.env` file:
+
+```
+PORT=5000
+MONGO_URL=mongodb://localhost:27017/shortener
+REDIS_URL=redis://localhost:6379
+BASE_URL=http://localhost:5000
+```
+
+### **Step 4 — Start the Server**
+
+```bash
+npm run dev
+```
+
+Your backend is now running at:
+
+```
+http://localhost:5000
+```
 
 ---
 
-# 🔧 **2. Basic URL Controller Setup**
+# 🔗 **3. API Usage Guide**
 
-We start by creating two main controllers:
-
-## ✔ **createUrl**
-
-* Accepts long URL from request body.
-* Generates a short code.
-* Stores mapping in MongoDB.
-
-## ✔ **redirectUrl**
-
-* Looks up the short code.
-* Redirects user to original URL.
+This system exposes **two main endpoints**:
 
 ---
 
-# 🔤 **3. Adding Feature: Custom Slug**
+# 🟦 **3.1 Create Short URL**
 
-Users should be able to specify their own custom code instead of a randomly generated one.
+### **POST** `/api/url`
 
-### **Naive Implementation (Problematic)**
+### **Request Body**
 
-```js
-if (customCode) {
-  const existingUrl = await URL.findOne({ short_url: customCode });
-  if (existingUrl) {
-    return res.status(400).json({ message: "Custom code already exists" });
-  }
+```json
+{
+  "url": "https://example.com",
+  "customCode": "ankit123"
 }
 ```
 
-### ❌ **Why This Approach is Bad**
+### **Response**
 
-This creates a **race condition**:
-
-### ⚠ Scenario:
-
-Two users send the **same** custom slug at the **same time**.
-
-1. **Both run `findOne()`**
-2. Both get: *"slug does not exist"*
-3. Both run `URL.create()`
-4. One succeeds, one fails → inconsistent behavior
-
-### ❌ Additional Issues
-
-* Performs **one extra DB read every time** user sends a custom code
-  → Slows down API
-* Does not trust MongoDB’s **unique index**
-* Not scalable when multiple server instances run
-
----
-
-# 🔒 **4. Solution: Use Unique Index + Catch Duplicate Error**
-
-MongoDB ensures uniqueness.
-We **remove manual checking** and **let DB enforce uniqueness**.
-
-### New approach:
-
-* Try inserting directly.
-* If slug already exists → Mongo throws error code: `11000`
-* Catch and handle cleanly.
-
-This avoids race conditions and eliminates unnecessary DB reads.
-
----
-
-# 🌐 **5. Validating URL Format**
-
-Earlier, no format validations were present.
-
-Now we add:
-
-```js
-try {
-  const normalizedUrl = new URL(url).href;
-} catch {
-  return res.status(400).json({ message: "Invalid URL" });
+```json
+{
+  "message": "URL created successfully",
+  "shortURL": "http://localhost:5000/ankit123",
+  "shortCode": "ankit123"
 }
 ```
 
-### Why is this important?
+### **Notes**
 
-* Ensures only valid URLs (http/https) are stored
-* Prevents storing invalid or malicious URLs
-* Normalizes URL
-  Example: removes unnecessary characters and ensures consistent format
-
----
-
-# ⚙ **6. Redirect Logic Optimization with `.lean()`**
-
-Initial redirect logic:
-
-```js
-const url = await URL.findOne({ short_url: code });
-```
-
-### ❌ Problem:
-
-Returns a **full Mongoose document**, which includes:
-
-* internal metadata
-* getters/setters
-* prototype chain
-* virtuals
-
-This is unnecessary for a simple redirect.
+✔ `customCode` is optional
+✔ If omitted → nanoid(6) generates a random slug
+✔ If slug already exists → system returns error (handled via DB unique index)
 
 ---
 
-### ✔ Optimized version:
+#  **3.2 Redirect URL**
 
-```js
-const url = await URL.findOne({ short_url: code }).lean();
-```
+### **GET** `/:code`
 
-### Benefits of `.lean()`:
-
-* Returns **plain JS object**
-* **3x to 10x faster**
-* Less memory usage
-* Perfect for high-frequency redirect endpoint
-
----
-
-# 🚀 **7. Adding Redis Caching (Major Optimization)**
-
-Redirect route is the **most frequently hit** part of any URL shortener.
-
-To handle thousands/millions of redirects efficiently, we add **Redis caching**.
-
----
-
-# ⚡ **Caching Strategy (Cache-Aside Pattern)**
-
-### **Flow:**
+Example:
 
 ```
-1️⃣ Check Redis cache using short code
-    ↓
-2️⃣ If found → redirect immediately (<2ms)
-    ↓
-3️⃣ If NOT found → query MongoDB
-    ↓
-4️⃣ Save result to Redis for future use
-    ↓
-5️⃣ Redirect user to original URL
+GET http://localhost:5000/ankit123
 ```
 
-### Why this is important?
+### **Flow**
 
-* Removes 80–95% of DB load
-* Makes redirect almost instantaneous
-* Scales well across multiple servers
-* Boosts performance dramatically
+1. System checks Redis cache
+2. If not found, loads from MongoDB
+3. Updates cache (1 hour by default)
+4. Redirects user instantly
 
 ---
 
-# 🟢 **Redis-Powered Redirect Code**
+# 📊 **4. Analytics Usage**
 
-```js
-// STEP 1 : Check the redis cache first
-const cachekey = `short:${code}`;
-const cachedUrl = await redisClient.get(cachekey);
+Analytics are stored in Redis and can be accessed via separate API (you can expose these as needed).
 
-if (cachedUrl) {
-  console.log("🟢 Redis cache hit");
-  return res.redirect(cachedUrl);
+---
+
+## **4.1 Basic Analytics Keys**
+
+| Key                       | Description               |
+| ------------------------- | ------------------------- |
+| `stats:count:<code>`      | Total number of clicks    |
+| `stats:firstClick:<code>` | Timestamp of first click  |
+| `stats:lastClick:<code>`  | Timestamp of latest click |
+
+##### Example (Redis CLI):
+
+```bash
+GET stats:count:ankit123
+```
+
+---
+
+## **4.2 Detailed Logs**
+
+| Key                 | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| `stats:logs:<code>` | Latest 200 visit logs (IP, browser, OS, device, referrer) |
+
+##### Example (Redis CLI):
+
+```bash
+LRANGE stats:logs:ankit123 0 10
+```
+
+This returns items like:
+
+```json
+{
+  "timeStamp": 1730029938821,
+  "ip": "::1",
+  "browser": "Chrome",
+  "os": "Windows",
+  "device": "desktop",
+  "referrer": "direct"
 }
-
-console.log("🟠 Redis cache miss");
-
-// STEP 2 : Check the DB
-const url = await UrlModel.findOne(
-  { short_url: code },
-  { full_url: 1, _id: 0 }
-)
-  .lean()
-  .exec();
-
-if (!url) return res.status(404).json({ message: "URL not found" });
-
-// STEP 3 : Add to the redis cache
-await redisClient.set(cachekey, url.full_url, { EX: 60 * 60 });
-
-return res.redirect(url.full_url);
 ```
 
 ---
 
-# 📈 **Redis Cache Hit / Miss Behavior**
+# 🛡 **5. Rate Limiting (How It Works for Users)**
 
-### First request:
+Rate limiting is automatically applied based on **IP address**.
 
-```
-🟠 Redis cache miss
-```
+Default:
 
-* MongoDB is queried
-* Redis is updated
-* Redirect happens
+* 50 requests per minute per IP.
 
-### Next requests:
+If exceeded:
 
 ```
-🟢 Redis cache hit
+429 — Too Many Requests
 ```
 
-* Served instantly from Redis
-* No database query
+This helps prevent:
+
+* Misuse of URL creation API
+* Brute-force slug attacks
+* Server overload
 
 ---
 
+#  **6. Project Folder Structure (Reference)**
+
+```
+src/
+├── controllers/
+│   └── url.controller.js
+├── models/
+│   └── url.model.js
+├── routes/
+│   └── url.routes.js
+├── utils/
+│   └── analytics.js
+├── config/
+│   ├── db.js
+│   └── redis.js
+server.js
+```
+
+---
+
+#  **7. Deployment Guide (Production)**
+
+### **Step 1 — Install PM2**
+
+```
+npm install -g pm2
+```
+
+### **Step 2 — Run in Cluster Mode**
+
+```
+pm2 start server.js -i max
+```
+
+### Why cluster mode?
+
+✔ Uses all available CPU cores
+✔ Built-in load balancing
+✔ Auto-restarts if app crashes
+✔ Zero-downtime restarts
+
+Redis ensures:
+
+* Cache consistency
+* Rate limiting consistency
+* Analytics consistency
+
+across all PM2 instances.
+
+
+
+#  **10. How to Integrate With Any Frontend**
+
+Your frontend (React, Next.js, mobile app, etc.) can call:
+
+### **To create URL**
+
+```javascript
+await fetch("/api/url", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ url, customCode })
+});
+```
+
+### **To redirect**
+
+Just open:
+
+```
+https://yourdomain.com/<shortCode>
+```
+
+### **To show analytics**
+
+Use Redis data or create an API like:
+
+```
+GET /api/stats/:code
+```
+
+---
+
+For complete detailed explanation you can refer to the file available in the root named :  `PROJECT_DOCUMENTATION.md`

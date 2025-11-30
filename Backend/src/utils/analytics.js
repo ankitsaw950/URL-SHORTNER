@@ -50,25 +50,4 @@ export const recordIntermediateAnalytics = async (req, code) => {
   }
 };
 
-/*
 
-export const analytics = async(code) =>{
-
-    try{
-    
-    const countKey = `stats:count:${code};
-    const firstKey  = `stats:firstClick:${code};
-    const lastKey = `stats:lastClick:${code};
-
-    const time = Date.now();
-
-    redisClient.incr(countKey).catch(()=>{})
-    
-    redisClient.set(lastKey,time).catch(()=>{})
-
-    redisClient.set(firstKey,time,{NX:true}).catch(()=>{})
-
-    }
-}
-
-*/

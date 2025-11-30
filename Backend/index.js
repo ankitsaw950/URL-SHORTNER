@@ -33,5 +33,7 @@ app.get("/demo",async (req,res)=>{
 
 
 import urlRoutes from "./src/routes/url.routes.js"
+import analyticsRoutes from "./src/routes/analytics.routes.js"
 
 app.use("/api/url",urlRoutes)
+app.use("/api/stats",analyticsRoutes)
