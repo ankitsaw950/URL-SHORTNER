@@ -1,8 +1,7 @@
 
-
 ---
 
-# 📘 **URL Shortener – Usage & Integration Guide (For Developers & Teams)**
+#   `URL Shortener` 
 
 This section explains **how to use the URL Shortener backend in a real environment**.
 It covers setup, configuration, API usage, analytics retrieval, and production deployment.
@@ -28,12 +27,12 @@ express, mongoose, nanoid, redis, ua-parser-js, dotenv, cors
 
 ---
 
-# ⚙️ **2. How to Start the Project**
+#  **2. How to Start the Project**
 
 ### **Step 1 — Clone the Repository**
 
 ```bash
-git clone (Link) https://github.com/ankitsaw950/URL-SHORTNER
+git clone  https://github.com/ankitsaw950/URL-SHORTNER
 cd Backend
 ```
 
@@ -74,7 +73,7 @@ This system exposes **two main endpoints**:
 
 ---
 
-# 🟦 **3.1 Create Short URL**
+#  **3.1 Create Short URL**
 
 ### **POST** `/api/url`
 
@@ -100,7 +99,9 @@ This system exposes **two main endpoints**:
 ### **Notes**
 
 ✔ `customCode` is optional
+
 ✔ If omitted → nanoid(6) generates a random slug
+
 ✔ If slug already exists → system returns error (handled via DB unique index)
 
 ---
@@ -124,7 +125,7 @@ GET http://localhost:5000/ankit123
 
 ---
 
-# 📊 **4. Analytics Usage**
+#  **4. Analytics Usage**
 
 Analytics are stored in Redis and can be accessed via separate API (you can expose these as needed).
 
@@ -173,7 +174,7 @@ This returns items like:
 
 ---
 
-# 🛡 **5. Rate Limiting (How It Works for Users)**
+#  **5. Rate Limiting (How It Works for Users)**
 
 Rate limiting is automatically applied based on **IP address**.
 
@@ -231,10 +232,13 @@ pm2 start server.js -i max
 
 ### Why cluster mode?
 
-✔ Uses all available CPU cores
-✔ Built-in load balancing
-✔ Auto-restarts if app crashes
-✔ Zero-downtime restarts
+  ✔ Uses all available CPU cores
+
+  ✔ Built-in load balancing
+
+  ✔ Auto-restarts if app crashes
+
+  ✔ Zero-downtime restarts
 
 Redis ensures:
 
@@ -278,4 +282,7 @@ GET /api/stats/:code
 
 ---
 
-For complete detailed explanation you can refer to the file available in the root named :  `PROJECT_DOCUMENTATION.md`
+
+
+### 📄 Detailed Explanation  
+👉 **[Open PROJECT_DOCUMENTATION.md](https://github.com/ankitsaw950/URL-SHORTNER/blob/main/PROJECT_DOCUMENTATION.md)**
